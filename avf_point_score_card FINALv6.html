@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVF Unassisted Maturation Failure Risk Score</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0F1923;
+    --grey-dark: #3A4554;
+    --grey-mid: #7A8694;
+    --grey-light: #C8CDD4;
+    --grey-bg: #F4F5F7;
+    --white: #FFFFFF;
+    --accent: #1A3A6B;
+
+    --low: #0A6B39;
+    --low-bg: #E6F7EE;
+    --moderate: #8A6000;
+    --moderate-bg: #FFF6DC;
+    --high: #9B3A00;
+    --high-bg: #FFF0E6;
+    --veryhigh: #7B1111;
+    --veryhigh-bg: #FEF0F0;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: #E8EAED;
+    color: var(--black);
+    padding: 2rem 1rem;
+    min-height: 100vh;
+  }
+
+  .card {
+    background: var(--white);
+    max-width: 680px;
+    margin: 0 auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+    overflow: hidden;
+  }
+
+  /* Header */
+  .card-header {
+    background: var(--accent);
+    color: var(--white);
+    padding: 1.5rem 2rem 1.25rem;
+  }
+
+  .card-header .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 0.4rem;
+  }
+
+  .card-header h1 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    margin-bottom: 0.3rem;
+  }
+
+  .card-header p {
+    font-size: 0.75rem;
+    opacity: 0.75;
+    line-height: 1.5;
+  }
+
+  /* Section */
+  .section {
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--grey-bg);
+  }
+
+  .section:last-child { border-bottom: none; }
+
+  .section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--grey-mid);
+    margin-bottom: 0.875rem;
+  }
+
+  /* Score table */
+  .score-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .score-table tr {
+    border-bottom: 1px solid var(--grey-bg);
+  }
+
+  .score-table tr:last-child { border-bottom: none; }
+
+  .score-table td {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.825rem;
+    vertical-align: middle;
+  }
+
+  .score-table td:last-child {
+    text-align: right;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    width: 4rem;
+  }
+
+  .score-table .group-header td {
+    padding-top: 0.875rem;
+    padding-bottom: 0.2rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--grey-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: none;
+  }
+
+  .score-table .group-header:first-child td {
+    padding-top: 0.2rem;
+  }
+
+  .score-table td.indent { padding-left: 1.25rem; color: var(--grey-dark); }
+
+  .pts-zero { color: var(--grey-light); }
+  .pts-pos { color: var(--accent); }
+
+  /* Checkbox column */
+  .score-table td.check {
+    width: 1.5rem;
+    padding-right: 0.25rem;
+  }
+
+  .checkbox {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--grey-light);
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  /* Vessel reference table */
+  .vessel-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+  }
+
+  .vessel-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--grey-mid);
+    padding: 0.3rem 0.5rem;
+    text-align: left;
+    border-bottom: 1.5px solid var(--grey-light);
+  }
+
+  .vessel-table th:not(:first-child) { text-align: center; }
+
+  .vessel-table td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--grey-bg);
+    color: var(--grey-dark);
+    vertical-align: middle;
+  }
+
+  .vessel-table td:not(:first-child) {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+  }
+
+  .vessel-table tr:last-child td { border-bottom: none; }
+
+  .vessel-table .avf-group {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--grey-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-top: 0.6rem;
+    padding-bottom: 0.1rem;
+    border-bottom: none;
+  }
+
+  .band-small { color: var(--veryhigh); font-weight: 600; }
+  .band-avg { color: var(--grey-dark); }
+  .band-large { color: var(--low); font-weight: 600; }
+
+  /* Risk categories */
+  .risk-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .risk-box {
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .risk-box .risk-info { text-align: right; flex: 1; }
+
+  .risk-box .score-range {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .risk-box .risk-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: block;
+    line-height: 1.2;
+  }
+
+  .risk-box .risk-prob {
+    font-size: 0.65rem;
+    opacity: 0.75;
+    line-height: 1.4;
+    display: block;
+    margin-top: 0.1rem;
+  }
+
+  .risk-box.low { background: var(--low-bg); color: var(--low); }
+  .risk-box.moderate { background: var(--moderate-bg); color: var(--moderate); }
+  .risk-box.high { background: var(--high-bg); color: var(--high); }
+  .risk-box.veryhigh { background: var(--veryhigh-bg); color: var(--veryhigh); }
+
+  /* Total score box */
+  .total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--grey-bg);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .total-row .total-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--grey-mid);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .total-row .total-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .total-row .total-line {
+    width: 80px;
+    height: 1.5px;
+    background: var(--grey-light);
+  }
+
+  .total-row .total-pts {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--grey-mid);
+  }
+
+  /* Footer */
+  .card-footer {
+    background: var(--grey-bg);
+    padding: 0.875rem 2rem;
+    font-size: 0.68rem;
+    color: var(--grey-mid);
+    line-height: 1.6;
+    border-top: 1px solid var(--grey-light);
+  }
+
+  /* Print */
+  @media print {
+    body { background: white; padding: 0; }
+    .card { box-shadow: none; max-width: 100%; }
+    .no-print { display: none; }
+  }
+
+  .print-btn {
+    display: block;
+    max-width: 680px;
+    margin: 1rem auto 0;
+    text-align: right;
+  }
+
+  .print-btn button {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--grey-mid);
+    background: none;
+    border: 1px solid var(--grey-light);
+    border-radius: 4px;
+    padding: 0.4rem 0.875rem;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+  }
+
+  .print-btn button:hover { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="print-btn no-print">
+  <button onclick="window.print()">Print / Save as PDF</button>
+</div>
+
+<div class="card">
+
+  <!-- Header -->
+  <div class="card-header">
+    <div class="eyebrow">Vascular Access — Clinical Decision Support</div>
+    <h1>AVF Unassisted Maturation Failure Risk Score</h1>
+    <p>Predicts probability of not achieving unassisted functional maturation at 6 months. Derived from a multivariate GEE model (n=456 AVF procedures, C-statistic=0.739).</p>
+  </div>
+
+  <!-- Score items -->
+  <div class="section">
+    <div class="section-title">Step 1 — Assign Points</div>
+    <table class="score-table">
+
+      <tr class="group-header"><td colspan="3">AVF Configuration</td></tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Brachiocephalic (brachial artery + arm cephalic vein)</td>
+        <td class="pts-zero">0</td>
+      </tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Brachiobasilic (brachial artery + basilic vein)</td>
+        <td class="pts-pos">+3</td>
+      </tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Radiocephalic (radial artery + forearm cephalic vein)</td>
+        <td class="pts-pos">+6</td>
+      </tr>
+
+      <tr class="group-header"><td colspan="3">Gender</td></tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Male</td>
+        <td class="pts-zero">0</td>
+      </tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Female</td>
+        <td class="pts-pos">+3</td>
+      </tr>
+
+      <tr class="group-header"><td colspan="3">Diabetes Mellitus</td></tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">No</td>
+        <td class="pts-zero">0</td>
+      </tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Yes</td>
+        <td class="pts-pos">+2</td>
+      </tr>
+
+      <tr class="group-header"><td colspan="3">Arterial Diameter — see reference table below</td></tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Large (&gt;1 SD above mean for vessel type)</td>
+        <td class="pts-zero">0</td>
+      </tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Average (within ±1 SD of mean)</td>
+        <td class="pts-pos">+1</td>
+      </tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Small (&gt;1 SD below mean for vessel type)</td>
+        <td class="pts-pos">+2</td>
+      </tr>
+
+      <tr class="group-header"><td colspan="3">Venous Diameter — see reference table below</td></tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Large (&gt;1 SD above mean for vessel type)</td>
+        <td class="pts-zero">0</td>
+      </tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Average (within ±1 SD of mean)</td>
+        <td class="pts-pos">+1</td>
+      </tr>
+      <tr>
+        <td class="check"><span class="checkbox"></span></td>
+        <td class="indent">Small (&gt;1 SD below mean for vessel type)</td>
+        <td class="pts-pos">+2</td>
+      </tr>
+
+    </table>
+
+    <div class="total-row">
+      <span class="total-label">Total Score</span>
+      <div class="total-box">
+        <div class="total-line"></div>
+        <span class="total-pts">range 0 to 15</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk categories -->
+  <div class="section">
+    <div class="section-title">Step 2 — Interpret Score</div>
+    <div class="risk-grid">
+      <div class="risk-box low">
+        <span class="score-range">0 – 3</span>
+        <div class="risk-info">
+          <span class="risk-name">Low Risk</span>
+          <span class="risk-prob">&lt;25% predicted probability of not achieving unassisted functional maturation at 6 months</span>
+        </div>
+      </div>
+      <div class="risk-box moderate">
+        <span class="score-range">4 – 7</span>
+        <div class="risk-info">
+          <span class="risk-name">Moderate Risk</span>
+          <span class="risk-prob">25–50% predicted probability of not achieving unassisted functional maturation at 6 months</span>
+        </div>
+      </div>
+      <div class="risk-box high">
+        <span class="score-range">8 – 10</span>
+        <div class="risk-info">
+          <span class="risk-name">High Risk</span>
+          <span class="risk-prob">50–75% predicted probability of not achieving unassisted functional maturation at 6 months</span>
+        </div>
+      </div>
+      <div class="risk-box veryhigh">
+        <span class="score-range">11 – 15</span>
+        <div class="risk-info">
+          <span class="risk-name">Very High Risk</span>
+          <span class="risk-prob">&gt;75% predicted probability of not achieving unassisted functional maturation at 6 months</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vessel reference table -->
+  <div class="section">
+    <div class="section-title">Vessel Diameter Reference — SD Bands by Vessel Type</div>
+    <table class="vessel-table">
+      <thead>
+        <tr>
+          <th>Vessel</th>
+          <th><span class="band-small">Small (+2 pts)</span></th>
+          <th><span class="band-avg">Average (+1 pt)</span></th>
+          <th><span class="band-large">Large (0 pts)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="avf-group" colspan="4">Distal AVF (Radiocephalic)</td>
+        </tr>
+        <tr>
+          <td>Radial artery</td>
+          <td class="band-small">&lt;1.8 mm</td>
+          <td class="band-avg">1.8–2.7 mm</td>
+          <td class="band-large">&gt;2.7 mm</td>
+        </tr>
+        <tr>
+          <td>Forearm cephalic vein</td>
+          <td class="band-small">&lt;2.3 mm</td>
+          <td class="band-avg">2.3–3.9 mm</td>
+          <td class="band-large">&gt;3.9 mm</td>
+        </tr>
+        <tr>
+          <td class="avf-group" colspan="4">Proximal AVF (Brachiocephalic)</td>
+        </tr>
+        <tr>
+          <td>Brachial artery</td>
+          <td class="band-small">&lt;3.1 mm</td>
+          <td class="band-avg">3.1–4.9 mm</td>
+          <td class="band-large">&gt;4.9 mm</td>
+        </tr>
+        <tr>
+          <td>Arm cephalic vein</td>
+          <td class="band-small">&lt;2.9 mm</td>
+          <td class="band-avg">2.9–5.5 mm</td>
+          <td class="band-large">&gt;5.5 mm</td>
+        </tr>
+        <tr>
+          <td class="avf-group" colspan="4">Proximal AVF (Brachiobasilic)</td>
+        </tr>
+        <tr>
+          <td>Brachial artery</td>
+          <td class="band-small">&lt;3.1 mm</td>
+          <td class="band-avg">3.1–4.9 mm</td>
+          <td class="band-large">&gt;4.9 mm</td>
+        </tr>
+        <tr>
+          <td>Basilic vein</td>
+          <td class="band-small">&lt;3.0 mm</td>
+          <td class="band-avg">3.0–5.3 mm</td>
+          <td class="band-large">&gt;5.3 mm</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="card-footer">
+    Based on a single-centre retrospective cohort; external validation is required before routine clinical use. Use the digital calculator for continuous probability estimation.
+  </div>
+
+</div>
+
+</body>
+</html>

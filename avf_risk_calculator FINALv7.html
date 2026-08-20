@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVF Unassisted Maturation Failure Risk Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F8FA;
+    --surface: #FFFFFF;
+    --border: #E2E6EC;
+    --text-primary: #0F1923;
+    --text-secondary: #5A6677;
+    --text-muted: #9AA3AF;
+    --accent: #1A56DB;
+    --accent-light: #EBF0FD;
+
+    --low: #0A7C42;
+    --low-bg: #EDFAF3;
+    --low-border: #A3DFC0;
+
+    --moderate: #B07D00;
+    --moderate-bg: #FFF8E6;
+    --moderate-border: #F0CF6A;
+
+    --high: #C05000;
+    --high-bg: #FFF2E8;
+    --high-border: #F5B68A;
+
+    --veryhigh: #9B1C1C;
+    --veryhigh-bg: #FEF2F2;
+    --veryhigh-border: #F5A0A0;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .page-header {
+    max-width: 680px;
+    margin: 0 auto 2.5rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    margin-bottom: 0.4rem;
+  }
+
+  .page-header p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-light);
+    border-radius: 3px;
+    padding: 2px 7px;
+    margin-bottom: 0.75rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.75rem;
+    max-width: 680px;
+    margin: 0 auto 1.25rem;
+  }
+
+  .card-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .step-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  /* AVF type selector */
+  .avf-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .avf-option {
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    text-align: center;
+    user-select: none;
+  }
+
+  .avf-option:hover { border-color: var(--accent); background: var(--accent-light); }
+  .avf-option.selected { border-color: var(--accent); background: var(--accent-light); }
+
+  .avf-option .avf-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+  }
+
+  .avf-option .avf-vessels {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  /* Toggle buttons */
+  .toggle-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .toggle-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 0.6rem;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-secondary);
+  }
+
+  .toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .toggle-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+
+  /* Vessel inputs */
+  .vessel-row {
+    margin-bottom: 1.25rem;
+  }
+
+  .vessel-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.5rem;
+  }
+
+  .vessel-label span:first-child {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .vessel-label .zscore-display {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .vessel-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  .mm-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 3.5rem;
+    text-align: right;
+  }
+
+  /* Result */
+  .result-card {
+    max-width: 680px;
+    margin: 0 auto 1.25rem;
+    border-radius: 10px;
+    padding: 1.75rem;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    display: none;
+  }
+
+  .result-card.visible { display: block; }
+
+  .result-probability {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 3rem;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+
+  .result-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+  }
+
+  .risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    margin-bottom: 1.25rem;
+    letter-spacing: 0.02em;
+  }
+
+  .risk-badge.low { background: var(--low-bg); color: var(--low); border: 1px solid var(--low-border); }
+  .risk-badge.moderate { background: var(--moderate-bg); color: var(--moderate); border: 1px solid var(--moderate-border); }
+  .risk-badge.high { background: var(--high-bg); color: var(--high); border: 1px solid var(--high-border); }
+  .risk-badge.veryhigh { background: var(--veryhigh-bg); color: var(--veryhigh); border: 1px solid var(--veryhigh-border); }
+
+  .risk-bar-container {
+    background: var(--bg);
+    border-radius: 4px;
+    height: 6px;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  .risk-bar-fill.low { background: var(--low); }
+  .risk-bar-fill.moderate { background: var(--moderate); }
+  .risk-bar-fill.high { background: var(--high); }
+  .risk-bar-fill.veryhigh { background: var(--veryhigh); }
+
+  .guidance-box {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 1rem 1.125rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+  }
+
+  .guidance-box strong { color: var(--text-primary); }
+
+  /* Baseline context box */
+  .baseline-box {
+    border-radius: 6px;
+    padding: 0.875rem 1.125rem;
+    font-size: 0.825rem;
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    border: 1px solid transparent;
+  }
+
+  .baseline-box.above {
+    background: #FFF2E8;
+    border-color: #F5B68A;
+    color: #7A3000;
+  }
+
+  .baseline-box.below {
+    background: #EDFAF3;
+    border-color: #A3DFC0;
+    color: #0A5C30;
+  }
+
+  .baseline-box.similar {
+    background: #EBF0FD;
+    border-color: #A0B4F0;
+    color: #1A3A6B;
+  }
+
+  .baseline-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  .baseline-text strong { font-weight: 600; }
+
+  /* Formula section */
+  .formula-section {
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .formula-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    margin-bottom: 0.75rem;
+  }
+
+  .formula-block {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 0.875rem 1rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    word-break: break-all;
+  }
+
+  .formula-block .highlight { color: var(--accent); font-weight: 600; }
+
+  /* Summary table */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .summary-table td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .summary-table td:first-child { color: var(--text-primary); font-weight: 500; }
+  .summary-table td:last-child { font-family: 'IBM Plex Mono', monospace; text-align: right; }
+
+  .disclaimer {
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    padding: 0 0.25rem;
+  }
+
+  @media (max-width: 480px) {
+    .avf-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="tag">Clinical Decision Support</div>
+  <h1>AVF Unassisted Maturation Failure Risk Calculator</h1>
+  <p>Predicts probability of failure to achieve unassisted functional maturation at 6 months. Derived from a multivariate GEE model (n=456 AVF procedures, C-statistic=0.739).</p>
+</div>
+
+<!-- Step 1: AVF Type -->
+<div class="card">
+  <div class="card-title">Step 1 — AVF Configuration</div>
+  <div class="avf-grid">
+    <div class="avf-option" onclick="selectAVF('brachiocephalic')" id="btn-brachiocephalic">
+      <span class="avf-name">Brachiocephalic</span>
+      <span class="avf-vessels">Brachial artery<br>Arm cephalic vein</span>
+    </div>
+    <div class="avf-option" onclick="selectAVF('brachiobasilic')" id="btn-brachiobasilic">
+      <span class="avf-name">Brachiobasilic</span>
+      <span class="avf-vessels">Brachial artery<br>Basilic vein</span>
+    </div>
+    <div class="avf-option" onclick="selectAVF('radiocephalic')" id="btn-radiocephalic">
+      <span class="avf-name">Radiocephalic</span>
+      <span class="avf-vessels">Radial artery<br>Forearm cephalic vein</span>
+    </div>
+  </div>
+</div>
+
+<!-- Step 2: Patient Characteristics -->
+<div class="card">
+  <div class="card-title">Step 2 — Patient Characteristics</div>
+
+  <span class="toggle-label">Gender</span>
+  <div class="toggle-row">
+    <button class="toggle-btn" id="btn-male" onclick="setSex('male')">Male</button>
+    <button class="toggle-btn" id="btn-female" onclick="setSex('female')">Female</button>
+  </div>
+
+  <span class="toggle-label">Diabetes mellitus</span>
+  <div class="toggle-row">
+    <button class="toggle-btn" id="btn-nodiab" onclick="setDiabetes(false)">No</button>
+    <button class="toggle-btn" id="btn-diab" onclick="setDiabetes(true)">Yes</button>
+  </div>
+
+  <span class="toggle-label">Dyslipidemia</span>
+  <div class="toggle-row" style="margin-bottom:0">
+    <button class="toggle-btn" id="btn-nodyslipi" onclick="setDyslipidemia(false)">No</button>
+    <button class="toggle-btn" id="btn-dyslipi" onclick="setDyslipidemia(true)">Yes</button>
+  </div>
+</div>
+
+<!-- Step 3: Vessel Diameters -->
+<div class="card" id="vessel-card">
+  <div class="card-title">Step 3 — Pre-operative Vessel Diameters</div>
+
+  <div class="vessel-row" id="artery-row">
+    <div class="vessel-label">
+      <span id="artery-label">Artery diameter</span>
+      <span class="zscore-display" id="art-zscore-display">z = —</span>
+    </div>
+    <div class="vessel-input-row">
+      <input type="range" id="artery-slider" min="1.0" max="7.0" step="0.1" value="3.0" oninput="updateVessels()">
+      <span class="mm-value" id="artery-mm">3.0 mm</span>
+    </div>
+  </div>
+
+  <div class="vessel-row" id="vein-row">
+    <div class="vessel-label">
+      <span id="vein-label">Vein diameter</span>
+      <span class="zscore-display" id="ven-zscore-display">z = —</span>
+    </div>
+    <div class="vessel-input-row">
+      <input type="range" id="vein-slider" min="1.0" max="8.0" step="0.1" value="3.5" oninput="updateVessels()">
+      <span class="mm-value" id="vein-mm">3.5 mm</span>
+    </div>
+  </div>
+</div>
+
+<!-- Result -->
+<div class="result-card" id="result-card">
+  <div class="result-probability" id="result-prob">—</div>
+  <div class="result-label">predicted probability of not achieving unassisted functional maturation at 6 months</div>
+  <div class="risk-badge" id="risk-badge">—</div>
+  <div class="risk-bar-container">
+    <div class="risk-bar-fill" id="risk-bar"></div>
+  </div>
+  <div class="baseline-box" id="baseline-box" style="display:none">
+    <span class="baseline-icon" id="baseline-icon"></span>
+    <span class="baseline-text" id="baseline-text"></span>
+  </div>
+
+  <div class="formula-section">
+    <div class="formula-title">Input Summary & Formula</div>
+    <table class="summary-table" id="summary-table"></table>
+    <div class="formula-block" id="formula-display"></div>
+  </div>
+</div>
+
+<p class="disclaimer">
+  Predictions are based on a single-centre retrospective cohort and require external validation before routine clinical use.
+</p>
+
+<script>
+  // State
+  const state = {
+    avf: null,
+    female: null,
+    diabetes: null,
+    dyslipidemia: null,
+    artMm: 3.0,
+    venMm: 3.5
+  };
+
+  // Vessel parameters
+  const vesselParams = {
+    brachiocephalic: {
+      art: { label: 'Brachial artery diameter', mean: 3.993, sd: 0.935, min: 1.5, max: 7.0, default: 4.0 },
+      ven: { label: 'Arm cephalic vein diameter', mean: 4.194, sd: 1.285, min: 1.0, max: 8.0, default: 4.2 }
+    },
+    brachiobasilic: {
+      art: { label: 'Brachial artery diameter', mean: 3.993, sd: 0.935, min: 1.5, max: 7.0, default: 4.0 },
+      ven: { label: 'Basilic vein diameter', mean: 4.153, sd: 1.160, min: 1.0, max: 8.0, default: 4.2 }
+    },
+    radiocephalic: {
+      art: { label: 'Radial artery diameter', mean: 2.268, sd: 0.480, min: 0.5, max: 4.5, default: 2.3 },
+      ven: { label: 'Forearm cephalic vein diameter', mean: 3.102, sd: 0.804, min: 1.0, max: 6.0, default: 3.1 }
+    }
+  };
+
+  // GEE coefficients
+  const coeff = {
+    intercept: -1.527,
+    female: 0.801,
+    diabetes: 0.545,
+    dyslipidemia: -0.410,
+    radiocephalic: 1.510,
+    brachiobasilic: 0.737,
+    zArt: -0.272,
+    zVen: -0.298
+  };
+
+  // Observed cohort failure rates by AVF type
+  const cohortBaseline = {
+    brachiocephalic: { rate: 0.265, label: '26.5%', n: 204 },
+    brachiobasilic:  { rate: 0.420, label: '42.0%', n: 81  },
+    radiocephalic:   { rate: 0.551, label: '55.1%', n: 176 }
+  };
+
+  function selectAVF(type) {
+    state.avf = type;
+    ['brachiocephalic', 'brachiobasilic', 'radiocephalic'].forEach(t => {
+      document.getElementById('btn-' + t).classList.toggle('selected', t === type);
+    });
+    const p = vesselParams[type];
+    const artSlider = document.getElementById('artery-slider');
+    const venSlider = document.getElementById('vein-slider');
+    artSlider.min = p.art.min; artSlider.max = p.art.max; artSlider.value = p.art.default;
+    venSlider.min = p.ven.min; venSlider.max = p.ven.max; venSlider.value = p.ven.default;
+    document.getElementById('artery-label').textContent = p.art.label;
+    document.getElementById('vein-label').textContent = p.ven.label;
+    state.artMm = p.art.default;
+    state.venMm = p.ven.default;
+    updateVessels();
+  }
+
+  function setSex(val) {
+    state.female = val === 'female';
+    document.getElementById('btn-male').classList.toggle('active', val === 'male');
+    document.getElementById('btn-female').classList.toggle('active', val === 'female');
+    calculate();
+  }
+
+  function setDiabetes(val) {
+    state.diabetes = val;
+    document.getElementById('btn-nodiab').classList.toggle('active', !val);
+    document.getElementById('btn-diab').classList.toggle('active', val);
+    calculate();
+  }
+
+  function setDyslipidemia(val) {
+    state.dyslipidemia = val;
+    document.getElementById('btn-nodyslipi').classList.toggle('active', !val);
+    document.getElementById('btn-dyslipi').classList.toggle('active', val);
+    calculate();
+  }
+
+  function updateVessels() {
+    const artVal = parseFloat(document.getElementById('artery-slider').value);
+    const venVal = parseFloat(document.getElementById('vein-slider').value);
+    state.artMm = artVal;
+    state.venMm = venVal;
+    document.getElementById('artery-mm').textContent = artVal.toFixed(1) + ' mm';
+    document.getElementById('vein-mm').textContent = venVal.toFixed(1) + ' mm';
+    if (state.avf) {
+      const p = vesselParams[state.avf];
+      const zArt = (artVal - p.art.mean) / p.art.sd;
+      const zVen = (venVal - p.ven.mean) / p.ven.sd;
+      document.getElementById('art-zscore-display').textContent = 'z = ' + zArt.toFixed(2);
+      document.getElementById('ven-zscore-display').textContent = 'z = ' + zVen.toFixed(2);
+    }
+    calculate();
+  }
+
+  function calculate() {
+    if (state.avf === null || state.female === null || state.diabetes === null || state.dyslipidemia === null) return;
+
+    const p = vesselParams[state.avf];
+    const zArt = (state.artMm - p.art.mean) / p.art.sd;
+    const zVen = (state.venMm - p.ven.mean) / p.ven.sd;
+
+    const lp = coeff.intercept
+      + (state.female ? coeff.female : 0)
+      + (state.diabetes ? coeff.diabetes : 0)
+      + (state.dyslipidemia ? coeff.dyslipidemia : 0)
+      + (state.avf === 'radiocephalic' ? coeff.radiocephalic : 0)
+      + (state.avf === 'brachiobasilic' ? coeff.brachiobasilic : 0)
+      + coeff.zArt * zArt
+      + coeff.zVen * zVen;
+
+    const prob = 1 / (1 + Math.exp(-lp));
+    const pct = (prob * 100).toFixed(1);
+
+    // Risk category
+    let riskClass, riskLabel, guidance;
+    if (prob < 0.25) {
+      riskClass = 'low'; riskLabel = 'Low Risk';
+      guidance = '<strong>Below-average risk of not achieving unassisted functional maturation (&lt;25%).</strong>';
+    } else if (prob < 0.50) {
+      riskClass = 'moderate'; riskLabel = 'Moderate Risk';
+      guidance = '<strong>Moderate risk of not achieving unassisted functional maturation (25–50%).</strong>';
+    } else if (prob < 0.75) {
+      riskClass = 'high'; riskLabel = 'High Risk';
+      guidance = '<strong>High risk of not achieving unassisted functional maturation (50–75%).</strong>';
+    } else {
+      riskClass = 'veryhigh'; riskLabel = 'Very High Risk';
+      guidance = '<strong>Very high risk of not achieving unassisted functional maturation (≥75%).</strong> Alternative vascular access strategies should be strongly considered. If AVF is still planned, intensive post-operative surveillance and early intervention protocols are recommended.';
+    }
+
+    // Show result
+    const resultCard = document.getElementById('result-card');
+    resultCard.className = 'result-card visible';
+
+    document.getElementById('result-prob').textContent = pct + '%';
+    document.getElementById('result-prob').style.color =
+      riskClass === 'low' ? 'var(--low)' :
+      riskClass === 'moderate' ? 'var(--moderate)' :
+      riskClass === 'high' ? 'var(--high)' : 'var(--veryhigh)';
+
+    const badge = document.getElementById('risk-badge');
+    badge.textContent = riskLabel;
+    badge.className = 'risk-badge ' + riskClass;
+
+    const bar = document.getElementById('risk-bar');
+    bar.style.width = Math.min(prob * 100, 100) + '%';
+    bar.className = 'risk-bar-fill ' + riskClass;
+
+    // Summary table
+    const avfNames = { brachiocephalic: 'Brachiocephalic', brachiobasilic: 'Brachiobasilic', radiocephalic: 'Radiocephalic' };
+
+    // Baseline context
+    const baseline = cohortBaseline[state.avf];
+    const diff = prob - baseline.rate;
+    const absDiffPct = Math.abs(diff * 100).toFixed(1);
+    const baselineBox = document.getElementById('baseline-box');
+    const baselineIcon = document.getElementById('baseline-icon');
+    const baselineText = document.getElementById('baseline-text');
+    baselineBox.style.display = 'flex';
+
+    if (Math.abs(diff) <= 0.05) {
+      baselineBox.className = 'baseline-box similar';
+      baselineIcon.textContent = '≈';
+      baselineText.innerHTML = `<strong>Within average risk for this configuration.</strong> Similar to cohort baseline.<br><span style="font-size:0.8rem;opacity:0.85">Predicted probability (${pct}%) is close to the observed failure rate for ${avfNames[state.avf]} AVFs in this cohort (${baseline.label}, n=${baseline.n}).</span>`;
+    } else if (diff > 0) {
+      baselineBox.className = 'baseline-box above';
+      baselineIcon.textContent = '↑';
+      baselineText.innerHTML = `<strong>Above-average risk for this configuration.</strong> <strong>${absDiffPct} percentage points above cohort baseline.</strong><br><span style="font-size:0.8rem;opacity:0.85">Predicted probability (${pct}%) exceeds the observed failure rate for ${avfNames[state.avf]} AVFs in this cohort (${baseline.label}, n=${baseline.n}).</span>`;
+    } else {
+      baselineBox.className = 'baseline-box below';
+      baselineIcon.textContent = '↓';
+      baselineText.innerHTML = `<strong>Below-average risk for this configuration.</strong> <strong>${absDiffPct} percentage points below cohort baseline.</strong><br><span style="font-size:0.8rem;opacity:0.85">Predicted probability (${pct}%) is lower than the observed failure rate for ${avfNames[state.avf]} AVFs in this cohort (${baseline.label}, n=${baseline.n}).</span>`;
+    }
+
+    document.getElementById('summary-table').innerHTML = `
+      <tr><td>AVF configuration</td><td>${avfNames[state.avf]}</td></tr>
+      <tr><td>Sex</td><td>${state.female ? 'Female' : 'Male'}</td></tr>
+      <tr><td>Diabetes</td><td>${state.diabetes ? 'Yes' : 'No'}</td></tr>
+      <tr><td>Dyslipidemia</td><td>${state.dyslipidemia ? 'Yes' : 'No'}</td></tr>
+      <tr><td>${p.art.label}</td><td>${state.artMm.toFixed(1)} mm → z = ${zArt.toFixed(3)}</td></tr>
+      <tr><td>${p.ven.label}</td><td>${state.venMm.toFixed(1)} mm → z = ${zVen.toFixed(3)}</td></tr>
+      <tr><td>Linear predictor (LP)</td><td>${lp.toFixed(4)}</td></tr>
+    `;
+
+    // Formula display
+    const femaleStr = state.female ? '<span class="highlight">+0.801×1</span>' : '+0.801×0';
+    const diabStr = state.diabetes ? '<span class="highlight">+0.545×1</span>' : '+0.545×0';
+    const dyslipiStr = state.dyslipidemia ? '<span class="highlight">−0.410×1</span>' : '−0.410×0';
+    const rcStr = state.avf === 'radiocephalic' ? '<span class="highlight">+1.510×1</span>' : '+1.510×0';
+    const bbStr = state.avf === 'brachiobasilic' ? '<span class="highlight">+0.737×1</span>' : '+0.737×0';
+
+    document.getElementById('formula-display').innerHTML =
+      `LP = −1.527 ${femaleStr} ${diabStr} ${dyslipiStr}<br>` +
+      `     ${rcStr} ${bbStr}<br>` +
+      `     −0.272×${zArt.toFixed(3)} −0.298×${zVen.toFixed(3)}<br>` +
+      `   = <span class="highlight">${lp.toFixed(4)}</span><br><br>` +
+      `P = 1 / (1 + e<sup>−(${lp.toFixed(4)})</sup>) = <span class="highlight">${pct}%</span>`;
+  }
+</script>
+</body>
+</html>

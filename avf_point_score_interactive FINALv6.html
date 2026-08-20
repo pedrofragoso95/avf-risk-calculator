@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVF Unassisted  Maturation Failure Risk Score</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0D1B2A;
+    --ink-mid: #4A5568;
+    --ink-light: #8A9BB0;
+    --rule: #DDE3EC;
+    --bg: #F5F7FA;
+    --white: #FFFFFF;
+    --blue: #1A3A6B;
+    --blue-light: #EBF0FB;
+
+    --low: #0A6B39;
+    --low-bg: #E8F7EF;
+    --low-border: #A8DFC0;
+    --moderate: #7A5500;
+    --moderate-bg: #FFF7E0;
+    --moderate-border: #F0CF6A;
+    --high: #8B3000;
+    --high-bg: #FFF1E8;
+    --high-border: #F5B68A;
+    --veryhigh: #7B1111;
+    --veryhigh-bg: #FEF0F0;
+    --veryhigh-border: #F5A0A0;
+  }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 2rem 1rem 5rem;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* Layout */
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 2rem;
+  }
+
+  .header-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 0.5rem;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 0.4rem;
+  }
+
+  .header p {
+    font-size: 0.825rem;
+    color: var(--ink-mid);
+    max-width: 580px;
+  }
+
+  /* Two-column layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  @media (max-width: 680px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* Card */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .card-head {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card-head-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+  }
+
+  .card-head-pts {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--blue);
+    background: var(--blue-light);
+    border-radius: 4px;
+    padding: 2px 8px;
+    min-width: 3rem;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  /* Variable groups */
+  .var-group {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .var-group:last-child { border-bottom: none; }
+
+  .var-group-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    padding: 0.6rem 1.25rem 0.3rem;
+  }
+
+  /* Option rows */
+  .option-row {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1.25rem;
+    cursor: pointer;
+    transition: background 0.1s;
+    gap: 0.75rem;
+    user-select: none;
+  }
+
+  .option-row:hover { background: var(--bg); }
+  .option-row.selected { background: var(--blue-light); }
+
+  .option-radio {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--rule);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s;
+  }
+
+  .option-row.selected .option-radio {
+    border-color: var(--blue);
+    background: var(--blue);
+  }
+
+  .option-row.selected .option-radio::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+  }
+
+  .option-label {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--ink-mid);
+  }
+
+  .option-row.selected .option-label {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .option-pts {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink-light);
+    min-width: 2.5rem;
+    text-align: right;
+  }
+
+  .option-row.selected .option-pts { color: var(--blue); }
+
+  /* Vessel section with mm input */
+  .vessel-section {
+    padding: 0.75rem 1.25rem;
+  }
+
+  .vessel-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .vessel-row:last-child { margin-bottom: 0; }
+
+  .vessel-name {
+    font-size: 0.8rem;
+    color: var(--ink-mid);
+    flex: 1;
+  }
+
+  .vessel-mm-input {
+    width: 72px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.3rem 0.5rem;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .vessel-mm-input:focus { border-color: var(--blue); background: white; }
+
+  .vessel-band {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    min-width: 4.5rem;
+    text-align: center;
+  }
+
+  .vessel-band.large { background: var(--low-bg); color: var(--low); }
+  .vessel-band.average { background: var(--bg); color: var(--ink-light); border: 1px solid var(--rule); }
+  .vessel-band.small { background: var(--veryhigh-bg); color: var(--veryhigh); }
+  .vessel-band.empty { background: transparent; color: transparent; border: 1px solid transparent; }
+
+  .vessel-pts {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-width: 2.5rem;
+    text-align: right;
+    color: var(--ink-light);
+  }
+
+  .vessel-pts.active { color: var(--blue); }
+
+  /* Reference toggle */
+  .ref-toggle {
+    padding: 0.5rem 1.25rem 0.75rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .ref-toggle-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .ref-toggle-btn:hover { color: var(--blue); }
+
+  .ref-table {
+    margin-top: 0.75rem;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    display: none;
+  }
+
+  .ref-table.visible { display: table; }
+
+  .ref-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    text-align: left;
+    padding: 0.25rem 0.4rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .ref-table td {
+    padding: 0.3rem 0.4rem;
+    color: var(--ink-mid);
+    border-bottom: 1px solid var(--bg);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .ref-table td:first-child {
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--ink);
+  }
+
+  .ref-table .avf-row td {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    padding-top: 0.5rem;
+    background: none;
+    border-bottom: none;
+  }
+
+  /* Right panel — score */
+  .score-panel {
+    position: sticky;
+    top: 1.5rem;
+  }
+
+  .score-display {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .score-top {
+    padding: 1.5rem 1.25rem 1rem;
+    text-align: center;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .score-number {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+    margin-bottom: 0.25rem;
+    transition: color 0.3s;
+  }
+
+  .score-label {
+    font-size: 0.72rem;
+    color: var(--ink-light);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .score-bar-track {
+    height: 5px;
+    background: var(--bg);
+    margin: 0.875rem 0 0;
+    position: relative;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    transition: width 0.4s ease, background 0.3s;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* Risk badge */
+  .risk-badge-wrap {
+    padding: 1rem 1.25rem;
+  }
+
+  .risk-badge {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .risk-badge .badge-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .risk-badge .badge-range {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.75rem;
+    opacity: 0.85;
+    line-height: 1.4;
+  }
+
+  .risk-badge.low { background: var(--low-bg); border-color: var(--low-border); color: var(--low); }
+  .risk-badge.moderate { background: var(--moderate-bg); border-color: var(--moderate-border); color: var(--moderate); }
+  .risk-badge.high { background: var(--high-bg); border-color: var(--high-border); color: var(--high); }
+  .risk-badge.veryhigh { background: var(--veryhigh-bg); border-color: var(--veryhigh-border); color: var(--veryhigh); }
+  .risk-badge.pending { background: var(--bg); border-color: var(--rule); color: var(--ink-light); }
+
+  /* Score breakdown */
+  .breakdown {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .breakdown-head {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .breakdown-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 1.25rem;
+    border-bottom: 1px solid var(--bg);
+    font-size: 0.78rem;
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+
+  .breakdown-row .br-label { color: var(--ink-mid); }
+  .breakdown-row .br-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 0.78rem;
+  }
+
+  .breakdown-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 1.25rem;
+    background: var(--bg);
+    border-top: 1.5px solid var(--rule);
+  }
+
+  .breakdown-total .bt-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ink-mid);
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .breakdown-total .bt-formula {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--blue);
+  }
+
+  /* Baseline context box */
+  .baseline-box {
+    margin: 0 1.25rem 0.75rem;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    display: none;
+    align-items: flex-start;
+    gap: 0.6rem;
+    border: 1px solid transparent;
+  }
+
+  .baseline-box.visible { display: flex; }
+
+  .baseline-box.above { background: #FFF1E8; border-color: #F5B68A; color: #7A3000; }
+  .baseline-box.below { background: #E8F7EF; border-color: #A8DFC0; color: #0A5C30; }
+  .baseline-box.similar { background: #EBF0FB; border-color: #A0B4F0; color: #1A3A6B; }
+
+  .baseline-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .baseline-text strong { font-weight: 600; }
+
+  /* Incomplete state */
+  .incomplete-msg {
+    font-size: 0.78rem;
+    color: var(--ink-light);
+    text-align: center;
+    padding: 1.5rem 1.25rem;
+    font-style: italic;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 1.5rem;
+    font-size: 0.7rem;
+    color: var(--ink-light);
+    line-height: 1.6;
+    padding: 0 0.25rem;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-eyebrow">Vascular Access · Clinical Decision Support</div>
+    <h1>AVF Unassisted  Maturation Failure Risk Score</h1>
+    <p>Select options and enter vessel diameters to calculate the total risk score (0–15). Predicts the risk of not achieving unassisted functional maturation at 6 months.</p>
+  </div>
+
+  <div class="layout">
+
+    <!-- Left: input card -->
+    <div class="card" id="input-card">
+
+      <!-- AVF Configuration -->
+      <div class="card-head">
+        <span class="card-head-title">AVF Configuration</span>
+        <span class="card-head-pts" id="pts-avf">—</span>
+      </div>
+      <div class="var-group">
+        <div class="option-row" onclick="select('avf','brachiocephalic',0)" id="opt-avf-brachiocephalic">
+          <div class="option-radio"></div>
+          <span class="option-label">Brachiocephalic <span style="font-size:0.75rem;color:var(--ink-light)">(brachial a. + arm cephalic v.)</span></span>
+          <span class="option-pts">0</span>
+        </div>
+        <div class="option-row" onclick="select('avf','brachiobasilic',3)" id="opt-avf-brachiobasilic">
+          <div class="option-radio"></div>
+          <span class="option-label">Brachiobasilic <span style="font-size:0.75rem;color:var(--ink-light)">(brachial a. + basilic v.)</span></span>
+          <span class="option-pts">+3</span>
+        </div>
+        <div class="option-row" onclick="select('avf','radiocephalic',6)" id="opt-avf-radiocephalic">
+          <div class="option-radio"></div>
+          <span class="option-label">Radiocephalic <span style="font-size:0.75rem;color:var(--ink-light)">(radial a. + forearm cephalic v.)</span></span>
+          <span class="option-pts">+6</span>
+        </div>
+      </div>
+
+      <!-- Gender -->
+      <div class="card-head" style="border-top:1px solid var(--rule)">
+        <span class="card-head-title">Gender</span>
+        <span class="card-head-pts" id="pts-gender">—</span>
+      </div>
+      <div class="var-group">
+        <div class="option-row" onclick="select('gender','male',0)" id="opt-gender-male">
+          <div class="option-radio"></div>
+          <span class="option-label">Male</span>
+          <span class="option-pts">0</span>
+        </div>
+        <div class="option-row" onclick="select('gender','female',3)" id="opt-gender-female">
+          <div class="option-radio"></div>
+          <span class="option-label">Female</span>
+          <span class="option-pts">+3</span>
+        </div>
+      </div>
+
+      <!-- Diabetes -->
+      <div class="card-head" style="border-top:1px solid var(--rule)">
+        <span class="card-head-title">Diabetes Mellitus</span>
+        <span class="card-head-pts" id="pts-diabetes">—</span>
+      </div>
+      <div class="var-group">
+        <div class="option-row" onclick="select('diabetes','no',0)" id="opt-diabetes-no">
+          <div class="option-radio"></div>
+          <span class="option-label">No</span>
+          <span class="option-pts">0</span>
+        </div>
+        <div class="option-row" onclick="select('diabetes','yes',2)" id="opt-diabetes-yes">
+          <div class="option-radio"></div>
+          <span class="option-label">Yes</span>
+          <span class="option-pts">+2</span>
+        </div>
+      </div>
+
+      <!-- Vessel Diameters -->
+      <div class="card-head" style="border-top:1px solid var(--rule)">
+        <span class="card-head-title">Vessel Diameters</span>
+        <span class="card-head-pts" id="pts-vessels">—</span>
+      </div>
+
+      <div class="vessel-section">
+        <!-- Artery -->
+        <div class="vessel-row">
+          <span class="vessel-name" id="artery-name">Artery (mm)</span>
+          <input class="vessel-mm-input" type="number" id="artery-input" min="0.5" max="8" step="0.1" placeholder="—" oninput="updateVessels()">
+          <span class="vessel-band empty" id="artery-band"></span>
+          <span class="vessel-pts" id="artery-pts">—</span>
+        </div>
+        <!-- Vein -->
+        <div class="vessel-row">
+          <span class="vessel-name" id="vein-name">Vein (mm)</span>
+          <input class="vessel-mm-input" type="number" id="vein-input" min="0.5" max="10" step="0.1" placeholder="—" oninput="updateVessels()">
+          <span class="vessel-band empty" id="vein-band"></span>
+          <span class="vessel-pts" id="vein-pts">—</span>
+        </div>
+      </div>
+
+      <!-- Reference table toggle -->
+      <div class="ref-toggle">
+        <button class="ref-toggle-btn" onclick="toggleRef()">
+          <span id="ref-arrow">▶</span> SD thresholds by vessel type
+        </button>
+        <table class="ref-table" id="ref-table">
+          <thead>
+            <tr>
+              <th>Vessel</th>
+              <th style="color:var(--veryhigh)">Small (+2)</th>
+              <th>Average (+1)</th>
+              <th style="color:var(--low)">Large (0)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="avf-row"><td colspan="4">Radiocephalic</td></tr>
+            <tr><td>Radial artery</td><td>&lt;1.8 mm</td><td>1.8–2.7 mm</td><td>&gt;2.7 mm</td></tr>
+            <tr><td>Forearm cephalic v.</td><td>&lt;2.3 mm</td><td>2.3–3.9 mm</td><td>&gt;3.9 mm</td></tr>
+            <tr class="avf-row"><td colspan="4">Brachiocephalic</td></tr>
+            <tr><td>Brachial artery</td><td>&lt;3.1 mm</td><td>3.1–4.9 mm</td><td>&gt;4.9 mm</td></tr>
+            <tr><td>Arm cephalic v.</td><td>&lt;2.9 mm</td><td>2.9–5.5 mm</td><td>&gt;5.5 mm</td></tr>
+            <tr class="avf-row"><td colspan="4">Brachiobasilic</td></tr>
+            <tr><td>Brachial artery</td><td>&lt;3.1 mm</td><td>3.1–4.9 mm</td><td>&gt;4.9 mm</td></tr>
+            <tr><td>Basilic vein</td><td>&lt;3.0 mm</td><td>3.0–5.3 mm</td><td>&gt;5.3 mm</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Right: score panel -->
+    <div class="score-panel">
+
+      <div class="score-display">
+        <div class="score-top">
+          <div class="score-number" id="score-number">—</div>
+          <div class="score-label">total score &nbsp;/&nbsp; 0–15</div>
+          <div class="score-bar-track">
+            <div class="score-bar-fill" id="score-bar" style="width:0%;background:var(--rule)"></div>
+          </div>
+        </div>
+        <div class="risk-badge-wrap">
+          <div class="risk-badge pending" id="risk-badge">
+            <span class="badge-label">Select all options</span>
+            <span class="badge-range">—</span>
+          </div>
+        </div>
+        <div class="breakdown" id="breakdown" style="border:none;border-radius:0;border-top:1px solid var(--rule)">
+          <div class="baseline-box" id="baseline-box">
+            <span class="baseline-icon" id="baseline-icon"></span>
+            <span class="baseline-text" id="baseline-text"></span>
+          </div>
+          <div class="incomplete-msg" id="breakdown-incomplete">Complete all selections to see breakdown</div>
+          <div id="breakdown-rows" style="display:none">
+            <div class="breakdown-row"><span class="br-label">AVF configuration</span><span class="br-val" id="br-avf">—</span></div>
+            <div class="breakdown-row"><span class="br-label">Gender</span><span class="br-val" id="br-gender">—</span></div>
+            <div class="breakdown-row"><span class="br-label">Diabetes</span><span class="br-val" id="br-diabetes">—</span></div>
+            <div class="breakdown-row"><span class="br-label">Arterial diameter</span><span class="br-val" id="br-artery">—</span></div>
+            <div class="breakdown-row"><span class="br-label">Venous diameter</span><span class="br-val" id="br-vein">—</span></div>
+            <div class="breakdown-total">
+              <span class="bt-label">Total Score</span>
+              <span class="bt-formula" id="br-raw">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="footer">
+    Derived from a multivariate GEE model (n=456 AVF procedures, C-statistic=0.739). External validation required before routine clinical use.
+  </p>
+
+</div>
+
+<script>
+  // State
+  const state = {
+    avf: null, avfPts: null,
+    gender: null, genderPts: null,
+    diabetes: null, diabetesPts: null,
+    artMm: null, artPts: null,
+    venMm: null, venPts: null
+  };
+
+  // Vessel parameters by AVF type
+  const vesselParams = {
+    brachiocephalic: {
+      art: { name: 'Brachial artery (mm)', mean: 3.993, sd: 0.935 },
+      ven: { name: 'Arm cephalic vein (mm)', mean: 4.194, sd: 1.285 }
+    },
+    brachiobasilic: {
+      art: { name: 'Brachial artery (mm)', mean: 3.993, sd: 0.935 },
+      ven: { name: 'Basilic vein (mm)', mean: 4.153, sd: 1.160 }
+    },
+    radiocephalic: {
+      art: { name: 'Radial artery (mm)', mean: 2.268, sd: 0.480 },
+      ven: { name: 'Forearm cephalic vein (mm)', mean: 3.102, sd: 0.804 }
+    }
+  };
+
+  function getBand(z) {
+    if (z === null || isNaN(z)) return null;
+    if (z > 1) return { label: 'Large', pts: 0, cls: 'large' };
+    if (z < -1) return { label: 'Small', pts: 2, cls: 'small' };
+    return { label: 'Average', pts: 1, cls: 'average' };
+  }
+
+  function select(group, key, pts) {
+    // Deselect previous
+    document.querySelectorAll(`[id^="opt-${group}-"]`).forEach(el => el.classList.remove('selected'));
+    // Select new
+    document.getElementById(`opt-${group}-${key}`).classList.add('selected');
+    state[group] = key;
+    state[`${group}Pts`] = pts;
+
+    // Update group pts badge
+    document.getElementById(`pts-${group}`).textContent = pts === 0 ? '0 pts' : `+${pts} pts`;
+
+    // If AVF changed, update vessel labels
+    if (group === 'avf') {
+      updateVesselLabels();
+      updateVessels();
+    }
+
+    calculate();
+  }
+
+  function updateVesselLabels() {
+    if (!state.avf) return;
+    const p = vesselParams[state.avf];
+    document.getElementById('artery-name').textContent = p.art.name;
+    document.getElementById('vein-name').textContent = p.ven.name;
+  }
+
+  function updateVessels() {
+    if (!state.avf) return;
+    const p = vesselParams[state.avf];
+
+    const artVal = parseFloat(document.getElementById('artery-input').value);
+    const venVal = parseFloat(document.getElementById('vein-input').value);
+
+    // Artery
+    if (!isNaN(artVal) && artVal > 0) {
+      const z = (artVal - p.art.mean) / p.art.sd;
+      const band = getBand(z);
+      state.artMm = artVal;
+      state.artPts = band.pts;
+      const bandEl = document.getElementById('artery-band');
+      bandEl.textContent = band.label;
+      bandEl.className = `vessel-band ${band.cls}`;
+      const ptsEl = document.getElementById('artery-pts');
+      ptsEl.textContent = band.pts === 0 ? '0' : (band.pts > 0 ? `+${band.pts}` : `${band.pts}`);
+      ptsEl.className = 'vessel-pts active';
+    } else {
+      state.artMm = null; state.artPts = null;
+      document.getElementById('artery-band').className = 'vessel-band empty';
+      document.getElementById('artery-band').textContent = '';
+      document.getElementById('artery-pts').textContent = '—';
+      document.getElementById('artery-pts').className = 'vessel-pts';
+    }
+
+    // Vein
+    if (!isNaN(venVal) && venVal > 0) {
+      const z = (venVal - p.ven.mean) / p.ven.sd;
+      const band = getBand(z);
+      state.venMm = venVal;
+      state.venPts = band.pts;
+      const bandEl = document.getElementById('vein-band');
+      bandEl.textContent = band.label;
+      bandEl.className = `vessel-band ${band.cls}`;
+      const ptsEl = document.getElementById('vein-pts');
+      ptsEl.textContent = band.pts === 0 ? '0' : (band.pts > 0 ? `+${band.pts}` : `${band.pts}`);
+      ptsEl.className = 'vessel-pts active';
+    } else {
+      state.venMm = null; state.venPts = null;
+      document.getElementById('vein-band').className = 'vessel-band empty';
+      document.getElementById('vein-band').textContent = '';
+      document.getElementById('vein-pts').textContent = '—';
+      document.getElementById('vein-pts').className = 'vessel-pts';
+    }
+
+    // Update vessel pts badge
+    if (state.artPts !== null && state.venPts !== null) {
+      const total = state.artPts + state.venPts;
+      document.getElementById('pts-vessels').textContent = total === 0 ? '0 pts' : (total > 0 ? `+${total} pts` : `${total} pts`);
+    } else {
+      document.getElementById('pts-vessels').textContent = '—';
+    }
+
+    calculate();
+  }
+
+  // Observed cohort failure rates by AVF type
+  const cohortBaseline = {
+    brachiocephalic: { rate: 0.265, label: '26.5%', n: 204 },
+    brachiobasilic:  { rate: 0.420, label: '42.0%', n: 81  },
+    radiocephalic:   { rate: 0.551, label: '55.1%', n: 176 }
+  };
+
+  function calculate() {
+    const complete = state.avfPts !== null && state.genderPts !== null &&
+                     state.diabetesPts !== null && state.artPts !== null && state.venPts !== null;
+
+    if (!complete) {
+      document.getElementById('score-number').textContent = '—';
+      document.getElementById('score-number').style.color = 'var(--ink)';
+      document.getElementById('score-bar').style.width = '0%';
+      document.getElementById('score-bar').style.background = 'var(--rule)';
+      document.getElementById('risk-badge').className = 'risk-badge pending';
+      document.getElementById('risk-badge').innerHTML = '<span class="badge-label">Select all options</span><span class="badge-range">—</span>';
+      document.getElementById('breakdown-incomplete').style.display = 'block';
+      document.getElementById('breakdown-rows').style.display = 'none';
+      document.getElementById('baseline-box').className = 'baseline-box';
+      return;
+    }
+
+    const total = state.avfPts + state.genderPts + state.diabetesPts + state.artPts + state.venPts;
+
+    // Risk category
+    let riskClass, riskLabel, riskRange;
+    if (total <= 3) { riskClass = 'low'; riskLabel = 'Low Risk'; riskRange = '<25% predicted probability of not achieving unassisted functional maturation at 6 months'; }
+    else if (total <= 7) { riskClass = 'moderate'; riskLabel = 'Moderate Risk'; riskRange = '25–50% predicted probability of not achieving unassisted functional maturation at 6 months'; }
+    else if (total <= 10) { riskClass = 'high'; riskLabel = 'High Risk'; riskRange = '50–75% predicted probability of not achieving unassisted functional maturation at 6 months'; }
+    else { riskClass = 'veryhigh'; riskLabel = 'Very High Risk'; riskRange = '≥75% predicted probability of not achieving unassisted functional maturation at 6 months'; }
+
+    const riskColors = { low: 'var(--low)', moderate: 'var(--moderate)', high: 'var(--high)', veryhigh: 'var(--veryhigh)' };
+    const barColors = { low: '#0A6B39', moderate: '#7A5500', high: '#8B3000', veryhigh: '#7B1111' };
+
+    document.getElementById('score-number').textContent = total;
+    document.getElementById('score-number').style.color = riskColors[riskClass];
+    document.getElementById('score-bar').style.width = `${(total / 15) * 100}%`;
+    document.getElementById('score-bar').style.background = barColors[riskClass];
+
+    document.getElementById('risk-badge').className = `risk-badge ${riskClass}`;
+    document.getElementById('risk-badge').innerHTML = `<span class="badge-label">${riskLabel}</span><span class="badge-range">${riskRange}</span>`;
+
+    // Breakdown
+    document.getElementById('breakdown-incomplete').style.display = 'none';
+    document.getElementById('breakdown-rows').style.display = 'block';
+
+    const fmt = (n) => n === 0 ? '0' : (n > 0 ? `+${n}` : `${n}`);
+    const avfNames = { brachiocephalic: 'Brachiocephalic', brachiobasilic: 'Brachiobasilic', radiocephalic: 'Radiocephalic' };
+
+    document.getElementById('br-avf').textContent = `${avfNames[state.avf]} (${fmt(state.avfPts)})`;
+    document.getElementById('br-gender').textContent = `${state.gender === 'male' ? 'Male' : 'Female'} (${fmt(state.genderPts)})`;
+    document.getElementById('br-diabetes').textContent = `${state.diabetes === 'yes' ? 'Yes' : 'No'} (${fmt(state.diabetesPts)})`;
+    document.getElementById('br-artery').textContent = `${document.getElementById('artery-input').value} mm → ${document.getElementById('artery-band').textContent} (${fmt(state.artPts)})`;
+    document.getElementById('br-vein').textContent = `${document.getElementById('vein-input').value} mm → ${document.getElementById('vein-band').textContent} (${fmt(state.venPts)})`;
+    document.getElementById('br-raw').textContent = total;
+
+    // Baseline context
+    const baseline = cohortBaseline[state.avf];
+    const riskMidpoints = { low: 0.125, moderate: 0.375, high: 0.625, veryhigh: 0.875 };
+    const approxProb = riskMidpoints[riskClass];
+    const diff = approxProb - baseline.rate;
+    const absDiffPct = Math.abs(diff * 100).toFixed(0);
+    const baselineBox = document.getElementById('baseline-box');
+    const baselineIcon = document.getElementById('baseline-icon');
+    const baselineText = document.getElementById('baseline-text');
+
+    if (Math.abs(diff) <= 0.10) {
+      baselineBox.className = 'baseline-box similar visible';
+      baselineIcon.textContent = '≈';
+      baselineText.innerHTML = `<strong>Within average risk for this configuration.</strong> Similar to cohort baseline.<br><span style="font-size:0.75rem;opacity:0.85">Predicted risk category aligns with the observed failure rate for ${avfNames[state.avf]} AVFs in this cohort (${baseline.label}, n=${baseline.n}).</span>`;
+    } else if (diff > 0) {
+      baselineBox.className = 'baseline-box above visible';
+      baselineIcon.textContent = '↑';
+      baselineText.innerHTML = `<strong>Above-average risk for this configuration.</strong> <strong>~${absDiffPct} percentage points above cohort baseline.</strong><br><span style="font-size:0.75rem;opacity:0.85">Predicted risk category exceeds the observed failure rate for ${avfNames[state.avf]} AVFs in this cohort (${baseline.label}, n=${baseline.n}).</span>`;
+    } else {
+      baselineBox.className = 'baseline-box below visible';
+      baselineIcon.textContent = '↓';
+      baselineText.innerHTML = `<strong>Below-average risk for this configuration.</strong> <strong>~${absDiffPct} percentage points below cohort baseline.</strong><br><span style="font-size:0.75rem;opacity:0.85">Predicted risk category is lower than the observed failure rate for ${avfNames[state.avf]} AVFs in this cohort (${baseline.label}, n=${baseline.n}).</span>`;
+    }
+  }
+
+  function toggleRef() {
+    const table = document.getElementById('ref-table');
+    const arrow = document.getElementById('ref-arrow');
+    const visible = table.classList.toggle('visible');
+    arrow.textContent = visible ? '▼' : '▶';
+  }
+</script>
+</body>
+</html>
